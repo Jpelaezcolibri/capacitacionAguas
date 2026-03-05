@@ -252,6 +252,34 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:58px;background:var(-
 .sprint-group-count{padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;font-family:'Syne',sans-serif;background:var(--sf-light);color:var(--sf-blue);border:1px solid rgba(0,161,224,.25);}
 .sprint-group-hours{padding:2px 9px;border-radius:12px;font-size:10px;font-weight:600;font-family:'Syne',sans-serif;background:var(--s2);color:var(--muted);border:1px solid var(--border);}
 
+/* ── SPRINT VIEW ── */
+.sprint-selector{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;}
+.sprint-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px 22px;cursor:pointer;transition:all .25s;min-width:140px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);position:relative;overflow:hidden;}
+.sprint-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--sf-blue);opacity:0;transition:opacity .2s;}
+.sprint-card:hover{transform:translateY(-2px);border-color:var(--sf-blue);box-shadow:0 6px 20px rgba(0,161,224,.15);}
+.sprint-card:hover::before{opacity:1;}
+.sprint-card.active{border-color:var(--sf-blue);background:var(--sf-light);box-shadow:0 4px 16px rgba(0,161,224,.18);}
+.sprint-card.active::before{opacity:1;background:linear-gradient(90deg,var(--sf-navy),var(--sf-blue));}
+.sprint-card-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--sf-navy);margin-bottom:6px;}
+.sprint-card-stats{display:flex;gap:12px;justify-content:center;}
+.sprint-card-stat{text-align:center;}
+.sprint-card-stat-n{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--sf-blue);display:block;}
+.sprint-card-stat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.sprint-role-group{margin-bottom:24px;}
+.sprint-role-header{display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--s1);border:1px solid var(--border);border-radius:12px 12px 0 0;border-bottom:2px solid var(--sf-blue);cursor:pointer;transition:all .2s;}
+.sprint-role-header:hover{background:var(--s2);}
+.sprint-role-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sprint-role-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;flex:1;}
+.sprint-role-badges{display:flex;gap:6px;align-items:center;}
+.sprint-role-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;font-family:'Syne',sans-serif;}
+.sprint-role-toggle{width:28px;height:28px;border-radius:50%;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;transition:transform .2s;}
+.sprint-role-group.open .sprint-role-toggle{transform:rotate(180deg);}
+.sprint-role-body{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;overflow:hidden;}
+.sprint-role-group.open .sprint-role-body{display:block;animation:fu .22s ease;}
+.sprint-empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.sprint-empty-icon{font-size:48px;margin-bottom:12px;}
+.sprint-empty-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--sf-navy);margin-bottom:6px;}
+
 /* ── UPLOAD MODAL ── */
 .upload-btn{padding:4px 12px;border-radius:20px;border:1px solid rgba(0,161,224,.5);background:rgba(0,161,224,.15);color:#fff;font-family:'Syne',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
 .upload-btn:hover{background:rgba(0,161,224,.35);border-color:var(--sf-blue);}
@@ -317,7 +345,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:58px;background:var(-
     <div><div class="nav-title">Aguas Andinas</div><div class="nav-sub">Capacitación Salesforce FSL</div></div>
   </div>
   <div class="nav-tabs">
-    <button class="ntab active" onclick="go('roles')">👥 Roles</button>
+    <button class="ntab active" onclick="go('roles')">👥 Perfiles</button>
+    <button class="ntab" onclick="go('sprints')">🏃 Sprints</button>
     <button class="ntab" onclick="go('comp')">🔀 Comparador</button>
     <button class="ntab" onclick="go('days')">📅 5 Días</button>
     <button class="ntab" onclick="go('quiz')">🎯 Quiz</button>
@@ -341,6 +370,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:58px;background:var(-
     <div class="sprint-filters" id="sprint-filters"></div>
     <div class="hu-filters" id="hu-filters"></div>
     <div class="hu-list" id="hu-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SPRINTS ═══════════════ -->
+<div class="scr" id="scr-sprints">
+  <div class="pg"><div class="tag">Vista por iteración</div><h1>Sprints del proyecto</h1><p>Selecciona un sprint para ver todas las HUs agrupadas por perfil del sistema</p></div>
+  <div class="pad">
+    <div class="sprint-selector" id="sprint-selector"></div>
+    <div id="sprint-content"></div>
   </div>
 </div>
 
@@ -645,10 +683,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 function go(id){
   document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
-  const map={roles:'scr-roles',comp:'scr-comp',days:'scr-days',quiz:'scr-quiz',detail:'scr-detail'};
-  const ti={roles:0,comp:1,days:2,quiz:3};
+  const map={roles:'scr-roles',sprints:'scr-sprints',comp:'scr-comp',days:'scr-days',quiz:'scr-quiz',detail:'scr-detail'};
+  const ti={roles:0,sprints:1,comp:2,days:3,quiz:4};
   document.getElementById(map[id])?.classList.add('on');
   if(ti[id]!==undefined) document.querySelectorAll('.ntab')[ti[id]]?.classList.add('active');
+  if(id==='sprints') renderSprintsView();
   window.scrollTo(0,0);
 }
 
@@ -837,6 +876,148 @@ function renderHUs(rid,cat){
 }
 
 function togHU(rid,huid){document.getElementById(`huc-${rid}-${huid}`)?.classList.toggle('open');}
+
+// ════════════════════════════════════════════
+//  SPRINTS VIEW
+// ════════════════════════════════════════════
+let curSprintView=null;
+
+function renderSprintsView(){
+  const allHus=Object.values(HD).flat();
+  const selectorEl=document.getElementById('sprint-selector');
+  const contentEl=document.getElementById('sprint-content');
+
+  if(allHus.length===0){
+    selectorEl.innerHTML='';
+    contentEl.innerHTML=`<div class="sprint-empty">
+      <div class="sprint-empty-icon">📭</div>
+      <div class="sprint-empty-title">Sin datos cargados</div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:16px;">Importa un archivo Excel para ver los sprints del proyecto.</div>
+      <button onclick="openUpload()" style="padding:10px 22px;background:var(--sf-blue);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📤 Cargar Excel</button>
+    </div>`;
+    return;
+  }
+
+  // Collect all sprints
+  const sprints=[...new Set(allHus.map(h=>h.sprint||'Sprint 1'))].sort();
+
+  // Auto-select first sprint if none selected
+  if(!curSprintView || !sprints.includes(curSprintView)) curSprintView=sprints[0];
+
+  // Render sprint selector cards
+  selectorEl.innerHTML=sprints.map(s=>{
+    const husInSprint=allHus.filter(h=>(h.sprint||'Sprint 1')===s);
+    const rolesInSprint=[...new Set(Object.entries(HD).filter(([rid,hus])=>hus.some(h=>(h.sprint||'Sprint 1')===s)).map(([rid])=>rid))];
+    const totalHh=husInSprint.reduce((sum,h)=>sum+h.sp,0);
+    const isActive=s===curSprintView;
+    return `<div class="sprint-card${isActive?' active':''}" onclick="selectSprint('${s}')">
+      <div class="sprint-card-name">🏃 ${s}</div>
+      <div class="sprint-card-stats">
+        <div class="sprint-card-stat"><span class="sprint-card-stat-n">${husInSprint.length}</span><span class="sprint-card-stat-l">HUs</span></div>
+        <div class="sprint-card-stat"><span class="sprint-card-stat-n">${rolesInSprint.length}</span><span class="sprint-card-stat-l">Perfiles</span></div>
+        <div class="sprint-card-stat"><span class="sprint-card-stat-n">${totalHh}</span><span class="sprint-card-stat-l">Horas</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Render HUs grouped by role for selected sprint
+  renderSprintContent(curSprintView);
+}
+
+function selectSprint(sprint){
+  curSprintView=sprint;
+  // Update active state on cards
+  document.querySelectorAll('.sprint-card').forEach(c=>c.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  renderSprintContent(sprint);
+}
+
+function renderSprintContent(sprint){
+  const contentEl=document.getElementById('sprint-content');
+
+  // Get all roles that have HUs in this sprint
+  const rolesWithHus=Object.entries(HD)
+    .map(([rid,hus])=>{
+      const filtered=hus.filter(h=>(h.sprint||'Sprint 1')===sprint);
+      return {rid, hus:filtered};
+    })
+    .filter(r=>r.hus.length>0)
+    .sort((a,b)=>b.hus.length-a.hus.length);
+
+  if(rolesWithHus.length===0){
+    contentEl.innerHTML=`<div class="sprint-empty">
+      <div class="sprint-empty-icon">🔍</div>
+      <div class="sprint-empty-title">Sin HUs en este sprint</div>
+    </div>`;
+    return;
+  }
+
+  contentEl.innerHTML=rolesWithHus.map(({rid,hus})=>{
+    const r=RC[rid]||{id:rid,name:rid,icon:'📋',c:'var(--muted)',bg:'var(--s2)',grad:'linear-gradient(90deg,var(--muted),var(--border))'};
+    const totalHh=hus.reduce((s,h)=>s+h.sp,0);
+    // Group HUs by category within this role
+    const cats=[...new Set(hus.map(h=>h.cat))];
+
+    return `<div class="sprint-role-group open" id="srg-${rid}">
+      <div class="sprint-role-header" onclick="togSprintRole('${rid}')" style="border-bottom-color:${r.c}">
+        <div class="sprint-role-icon" style="background:${r.bg}">${r.icon}</div>
+        <div class="sprint-role-name" style="color:${r.c}">${r.name}</div>
+        <div class="sprint-role-badges">
+          <span class="sprint-role-badge" style="background:${r.bg};color:${r.c};border:1px solid ${r.c}33">${hus.length} HUs</span>
+          <span class="sprint-role-badge" style="background:var(--s2);color:var(--muted);border:1px solid var(--border)">⚡ ${totalHh}h</span>
+        </div>
+        <div class="sprint-role-toggle">▼</div>
+      </div>
+      <div class="sprint-role-body">
+        ${hus.map(hu=>`
+          <div class="huc" id="shu-${rid}-${hu.id}">
+            <div class="huc-head" onclick="togSHU('${rid}','${hu.id}')">
+              <span class="huid" style="background:${r.bg};color:${r.c};border:1px solid ${r.c}33">${hu.id}</span>
+              <div class="huc-info">
+                <div class="huc-title">${hu.title}</div>
+                <div class="huc-desc">${hu.desc}</div>
+                <div class="huc-meta">
+                  <span class="huc-sp">⚡ ${hu.sp} SP</span>
+                  <span class="huc-sp">${CAT_CONFIG[hu.cat]?CAT_CONFIG[hu.cat].icon:''} ${CAT_CONFIG[hu.cat]?CAT_CONFIG[hu.cat].label:(hu._epicaRaw||hu.cat)}</span>
+                </div>
+              </div>
+              <div class="huc-tog">▼</div>
+            </div>
+            <div class="huc-body">
+              <div class="huc-grid">
+                <div class="huc-sec">
+                  <div class="huc-sec-t t-ok">✅ Puede hacer</div>
+                  <ul class="ul ok-l">${(hu.can||[]).map(c=>'<li>'+c+'</li>').join('')}</ul>
+                </div>
+                <div class="huc-sec">
+                  <div class="huc-sec-t t-err">🚫 Restricciones</div>
+                  <ul class="ul err-l">${(hu.restrict||[]).map(x=>'<li>'+x+'</li>').join('')}</ul>
+                </div>
+              </div>
+              <div class="huc-grid" style="margin-top:10px">
+                <div class="huc-sec">
+                  <div class="huc-sec-t t-acc">📐 Criterios clave</div>
+                  <ul class="ul acc-l">${(hu.criteria||[]).map(c=>'<li>'+c+'</li>').join('')}</ul>
+                </div>
+                <div class="huc-sec">
+                  <div class="huc-sec-t t-warn">💡 Tip del capacitador</div>
+                  <div class="tip-box">${hu.tip||'—'}</div>
+                </div>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togSprintRole(rid){
+  document.getElementById('srg-'+rid)?.classList.toggle('open');
+}
+
+function togSHU(rid,huid){
+  document.getElementById('shu-'+rid+'-'+huid)?.classList.toggle('open');
+}
 
 // ════════════════════════════════════════════
 //  COMPARADOR
